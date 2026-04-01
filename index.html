@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NexaSys — Cloud & Network Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #080C10;
+    --surface: #0D1117;
+    --surface2: #161B22;
+    --surface3: #1C2330;
+    --border: rgba(255,255,255,0.06);
+    --border-active: rgba(255,255,255,0.14);
+    --text: #E6EDF3;
+    --text-muted: #7D8590;
+    --text-dim: #4A5568;
+    --accent: #58A6FF;
+    --accent2: #3FB950;
+    --accent3: #F78166;
+    --accent4: #D2A8FF;
+    --accent5: #FFA657;
+    --glow: rgba(88,166,255,0.15);
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LOADER ── */
+  #loader {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+  }
+  #loader.hidden { opacity: 0; visibility: hidden; }
+
+  .loader-logo {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    animation: fadeUp 0.6s ease forwards;
+  }
+  .loader-bar-wrap {
+    width: 220px;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .loader-bar {
+    position: absolute;
+    left: -100%;
+    top: 0; height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scanBar 1.6s ease forwards;
+  }
+  .loader-pct {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    animation: countUp 1.6s steps(100) forwards;
+  }
+  @keyframes scanBar { to { left: 100%; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 0 40px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(8,12,16,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    transform: translateY(-100%);
+    animation: slideDown 0.5s ease 2s forwards;
+  }
+  @keyframes slideDown { to { transform: none; } }
+
+  .nav-logo {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+  .nav-logo span { color: var(--accent); }
+
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .nav-links a:hover { color: var(--text); background: var(--surface2); }
+
+  .nav-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--border-active);
+    border-radius: 20px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 40px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(88,166,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(88,166,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+    animation: gridFade 1s ease 2s both;
+  }
+  @keyframes gridFade { from { opacity: 0; } to { opacity: 1; } }
+
+  .hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+  .orb1 { width: 600px; height: 400px; background: rgba(88,166,255,0.07); top: 10%; left: 10%; animation: drift1 8s ease-in-out infinite; }
+  .orb2 { width: 400px; height: 300px; background: rgba(63,185,80,0.05); bottom: 10%; right: 10%; animation: drift2 10s ease-in-out infinite; }
+  @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,20px)} }
+  @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-20px,30px)} }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 2.1s forwards;
+  }
+
+  .hero-title {
+    font-family: var(--display);
+    font-size: clamp(42px, 6vw, 82px);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -0.04em;
+    color: var(--text);
+    max-width: 900px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 2.3s forwards;
+  }
+  .hero-title .line2 { color: var(--text-muted); }
+
+  .hero-sub {
+    margin-top: 24px;
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 560px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 2.5s forwards;
+  }
+
+  .hero-actions {
+    margin-top: 40px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 2.7s forwards;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .btn:active::after { opacity: 0.06; }
+  .btn-primary { background: var(--accent); color: #0D1117; }
+  .btn-primary:hover { background: #79B8FF; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(88,166,255,0.3); }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border-active); }
+  .btn-ghost:hover { background: var(--surface3); transform: translateY(-1px); }
+
+  .hero-stats {
+    margin-top: 70px;
+    display: flex;
+    gap: 48px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 2.9s forwards;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat-val {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.03em;
+  }
+  .hero-stat-val span { color: var(--accent); }
+  .hero-stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── SECTION STRUCTURE ── */
+  .section {
+    padding: 100px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .section.visible { opacity: 1; transform: none; }
+
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-tag::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+  }
+  .section-desc {
+    color: var(--text-muted);
+    max-width: 580px;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 52px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* ── MODULE CARDS ── */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 80px;
+  }
+  @media (max-width: 900px) { .module-grid { grid-template-columns: 1fr; } }
+
+  .module-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .module-card:hover {
+    border-color: var(--border-active);
+    transform: translateY(-2px);
+  }
+  .module-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--card-accent, var(--accent)), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .module-card:hover::before { opacity: 1; }
+
+  .module-icon {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin-bottom: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .module-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .module-title {
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.02em;
+  }
+  .module-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── TOOL PANELS ── */
+  .tool-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface2);
+  }
+  .panel-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .panel-title {
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .panel-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-left: auto;
+  }
+  .panel-body { padding: 28px; }
+
+  /* ── FORM ELEMENTS ── */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 7px; }
+  label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  input[type="number"], input[type="text"], textarea, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.1);
+  }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 100px; }
+
+  .range-wrap { display: flex; flex-direction: column; gap: 7px; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--surface3);
+    outline: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 0 3px rgba(88,166,255,0.2);
+    transition: box-shadow 0.15s;
+  }
+  input[type="range"]::-webkit-slider-thumb:active {
+    box-shadow: 0 0 0 6px rgba(88,166,255,0.2);
+  }
+  .range-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    align-self: flex-end;
+  }
+
+  /* ── RESULTS ── */
+  .result-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-top: 20px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-key {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+  .result-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .result-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding: 14px 20px;
+    background: rgba(88,166,255,0.06);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 8px;
+  }
+  .result-total-label {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .result-total-val {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  /* ── PLATFORM TABS ── */
+  .platform-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .ptab {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .ptab:hover { background: var(--surface2); color: var(--text); }
+  .ptab.active { background: var(--surface2); border-color: var(--border-active); color: var(--text); }
+  .ptab.active.aws { border-color: rgba(255,166,87,0.5); color: var(--accent5); }
+  .ptab.active.azure { border-color: rgba(88,166,255,0.5); color: var(--accent); }
+  .ptab.active.gcp { border-color: rgba(63,185,80,0.5); color: var(--accent2); }
+
+  /* ── ENERGY METER ── */
+  .energy-meter {
+    margin: 20px 0;
+    padding: 20px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .energy-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .energy-bar-bg {
+    height: 6px;
+    background: var(--surface3);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .energy-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s cubic-bezier(0.25,1,0.5,1), background 0.5s;
+    width: 0%;
+  }
+  .energy-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .e-stat {
+    text-align: center;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .e-stat-val {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .e-stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* ── SUGGESTIONS ── */
+  .suggestions { margin-top: 20px; }
+  .suggestion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .suggestion-item.show { opacity: 1; transform: none; }
+  .sug-icon { font-size: 15px; margin-top: 1px; }
+  .sug-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 3px;
+    letter-spacing: 0.04em;
+  }
+  .sug-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+  /* ── TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .data-table td {
+    padding: 14px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.015); }
+
+  .rating-bar { display: flex; gap: 3px; }
+  .rating-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .rating-dot.filled { background: var(--bar-color, var(--accent)); }
+  .rating-dot.empty { background: var(--surface3); }
+
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .badge-best { background: rgba(63,185,80,0.15); color: var(--accent2); border: 1px solid rgba(63,185,80,0.3); }
+  .badge-good { background: rgba(88,166,255,0.1); color: var(--accent); border: 1px solid rgba(88,166,255,0.2); }
+  .badge-avg { background: rgba(255,166,87,0.1); color: var(--accent5); border: 1px solid rgba(255,166,87,0.2); }
+
+  /* ── CHARTS ── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px;
+    margin-top: 28px;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .chart-card-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* ── NETWORK SECTION ── */
+  .network-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .threat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    transition: border-color 0.2s;
+  }
+  .threat-card:hover { border-color: var(--border-active); }
+  .threat-icon { font-size: 28px; margin-bottom: 16px; }
+  .threat-name {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .threat-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px; }
+  .threat-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .tag-attack { background: rgba(247,129,102,0.12); color: var(--accent3); border: 1px solid rgba(247,129,102,0.25); }
+  .tag-defend { background: rgba(63,185,80,0.1); color: var(--accent2); border: 1px solid rgba(63,185,80,0.2); }
+
+  .defend-list { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .defend-item {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    align-items: flex-start;
+  }
+  .defend-item::before { content: '›'; color: var(--accent2); font-weight: bold; margin-top: 1px; }
+
+  /* ── TERMINAL ── */
+  .terminal {
+    background: #030507;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .t-dot:nth-child(1) { background: #FF5F57; }
+  .t-dot:nth-child(2) { background: #FEBC2E; }
+  .t-dot:nth-child(3) { background: #28C840; }
+  .terminal-title { font-size: 11px; color: var(--text-dim); margin-left: 8px; }
+  .terminal-body { padding: 18px; line-height: 1.8; }
+  .t-cmd { color: #58A6FF; }
+  .t-green { color: #3FB950; }
+  .t-red { color: #F78166; }
+  .t-yellow { color: #FFA657; }
+  .t-dim { color: var(--text-dim); }
+  .t-white { color: var(--text); }
+
+  /* ── VOIP SECTION ── */
+  .voip-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin-top: 28px;
+    justify-content: center;
+  }
+  .voip-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+    min-width: 130px;
+  }
+  .voip-node-icon { font-size: 28px; margin-bottom: 8px; }
+  .voip-node-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .voip-node-proto {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .voip-arrow {
+    flex: 0 0 auto;
+    padding: 0 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .voip-arrow-line {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--accent);
+    font-size: 16px;
+  }
+  .voip-arrow-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── PACKET TABLE ── */
+  .packet-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-top: 20px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 60px 40px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .footer-logo {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .footer-logo span { color: var(--accent); }
+  .footer-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+  .footer-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 6px;
+  }
+  .footer-chip {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── SPLIT LAYOUT ── */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+
+  /* ── COMPARE TABS ── */
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 24px; }
+  .tab-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.06em;
+  }
+  .tab-btn.active { background: var(--surface2); border-color: var(--border-active); color: var(--text); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── SCROLL REVEAL ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ── PULSE ANIMATION ── */
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .live-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 1.8s ease-in-out infinite;
+    margin-right: 6px;
+  }
+
+  /* ─ responsive ─ */
+  @media (max-width: 700px) {
+    nav { padding: 0 20px; }
+    .section { padding: 60px 20px; }
+    .hero-title { font-size: 36px; }
+    .module-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">NexaSys // Initializing</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-pct" id="loaderPct">0%</div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Nexa<span>Sys</span></div>
+  <ul class="nav-links">
+    <li><a href="#cloud">Cloud</a></li>
+    <li><a href="#ai">AI Energy</a></li>
+    <li><a href="#compare">Compare</a></li>
+    <li><a href="#network">Network</a></li>
+  </ul>
+  <div class="nav-badge"><span class="live-dot"></span>LIVE SYSTEM</div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="orb1 hero-orb"></div>
+  <div class="orb2 hero-orb"></div>
+  <div class="hero-eyebrow">Cloud · AI · Network Intelligence</div>
+  <h1 class="hero-title">Efficiency & Security<br><span class="line2">of Modern Digital Systems</span></h1>
+  <p class="hero-sub">A unified platform to calculate cloud costs, analyze AI energy consumption, compare platforms, and understand network security — all in one interface.</p>
+  <div class="hero-actions">
+    <a href="#cloud" class="btn btn-primary">⚡ Launch Tools</a>
+    <a href="#network" class="btn btn-ghost">🔐 Network Security</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-val">3<span>x</span></div><div class="hero-stat-label">Cloud Platforms</div></div>
+    <div class="hero-stat"><div class="hero-stat-val">5<span>+</span></div><div class="hero-stat-label">Analysis Modules</div></div>
+    <div class="hero-stat"><div class="hero-stat-val">∞</div><div class="hero-stat-label">Optimization Insights</div></div>
+  </div>
+</section>
+
+<!-- MODULE OVERVIEW -->
+<div style="max-width:1200px;margin:0 auto;padding:0 40px 60px">
+  <div class="module-grid">
+    <div class="module-card" style="--card-accent:var(--accent5)" onclick="document.getElementById('cloud').scrollIntoView({behavior:'smooth'})">
+      <div class="module-icon">💰</div>
+      <div class="module-num">Module 01</div>
+      <div class="module-title">Cloud Cost Calculator</div>
+      <div class="module-desc">Compute exact costs across AWS, Azure & GCP based on storage, compute hours, and data transfer inputs.</div>
+    </div>
+    <div class="module-card" style="--card-accent:var(--accent4)" onclick="document.getElementById('ai').scrollIntoView({behavior:'smooth'})">
+      <div class="module-icon">⚡</div>
+      <div class="module-num">Module 02</div>
+      <div class="module-title">AI Energy Analyzer</div>
+      <div class="module-desc">Estimate token usage, energy footprint, and CO₂ impact of your AI prompts — with smart optimization strategies.</div>
+    </div>
+    <div class="module-card" style="--card-accent:var(--accent2)" onclick="document.getElementById('compare').scrollIntoView({behavior:'smooth'})">
+      <div class="module-icon">📊</div>
+      <div class="module-num">Module 03</div>
+      <div class="module-title">Platform Comparison</div>
+      <div class="module-desc">Side-by-side benchmarks of AWS vs Azure vs GCP on pricing, scalability, performance for real e-commerce workloads.</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- ── MODULE 1: CLOUD COST CALCULATOR ── -->
+<section class="section" id="cloud">
+  <div class="section-tag">Module 01</div>
+  <h2 class="section-title">Cloud Cost Calculator</h2>
+  <p class="section-desc">Input your cloud resource requirements and instantly calculate monthly costs across AWS, Azure, and Google Cloud Platform.</p>
+
+  <div class="platform-tabs">
+    <button class="ptab active aws" onclick="setPlatform('aws',this)">AWS</button>
+    <button class="ptab azure" onclick="setPlatform('azure',this)">Azure</button>
+    <button class="ptab gcp" onclick="setPlatform('gcp',this)">GCP</button>
+    <button class="ptab" onclick="setPlatform('all',this)">All Platforms</button>
+  </div>
+
+  <div class="split">
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dot" style="background:var(--accent5)"></div>
+        <span class="panel-title">Resource Configuration</span>
+        <span class="panel-sub">INPUTS</span>
+      </div>
+      <div class="panel-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Storage (GB)</label>
+            <div class="range-wrap">
+              <input type="range" id="storage" min="10" max="10000" value="500" oninput="updateRange('storage','storageVal',this.value);calcCost()">
+              <span class="range-val" id="storageVal">500 GB</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Compute (Hours/mo)</label>
+            <div class="range-wrap">
+              <input type="range" id="compute" min="1" max="744" value="200" oninput="updateRange('compute','computeVal',this.value);calcCost()">
+              <span class="range-val" id="computeVal">200 hrs</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Data Transfer (GB)</label>
+            <div class="range-wrap">
+              <input type="range" id="transfer" min="1" max="5000" value="100" oninput="updateRange('transfer','transferVal',this.value);calcCost()">
+              <span class="range-val" id="transferVal">100 GB</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Instance Type</label>
+            <select id="instanceType" onchange="calcCost()">
+              <option value="1">General Purpose (t3/B2s)</option>
+              <option value="2">Compute Optimized (c5/F4s)</option>
+              <option value="1.5">Memory Optimized (r5/E4s)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:8px">
+          <label>Region</label>
+          <select id="region" onchange="calcCost()">
+            <option value="1">US East (N. Virginia / East US / us-east1)</option>
+            <option value="1.1">Europe (Frankfurt / West Europe / europe-west1)</option>
+            <option value="1.2">Asia Pacific (Tokyo / Japan East / asia-east1)</option>
+          </select>
+        </div>
+
+        <div style="margin-top:20px;display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="calcCost()" style="flex:1">Calculate Cost →</button>
+          <button class="btn btn-ghost" onclick="resetCalc()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="tool-panel" id="costResult">
+        <div class="panel-header">
+          <div class="panel-dot" style="background:var(--accent2)"></div>
+          <span class="panel-title">Cost Breakdown</span>
+          <span class="panel-sub" id="platformLabel">AWS</span>
+        </div>
+        <div class="panel-body">
+          <div class="result-box">
+            <div class="result-row"><span class="result-key">Storage Cost</span><span class="result-val" id="storCost">$0.00</span></div>
+            <div class="result-row"><span class="result-key">Compute Cost</span><span class="result-val" id="compCost">$0.00</span></div>
+            <div class="result-row"><span class="result-key">Transfer Cost</span><span class="result-val" id="tranCost">$0.00</span></div>
+            <div class="result-row"><span class="result-key">Region Multiplier</span><span class="result-val" id="regionMult">1.00x</span></div>
+          </div>
+          <div class="result-total">
+            <span class="result-total-label">Monthly Total</span>
+            <span class="result-total-val" id="totalCost">$0.00</span>
+          </div>
+          <div style="margin-top:20px">
+            <div class="chart-wrap" style="height:180px">
+              <canvas id="costChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Platforms Comparison -->
+      <div id="allPlatformResult" style="display:none">
+        <div class="tool-panel">
+          <div class="panel-header">
+            <div class="panel-dot" style="background:var(--accent2)"></div>
+            <span class="panel-title">All Platforms Comparison</span>
+          </div>
+          <div class="panel-body">
+            <table class="data-table">
+              <thead><tr><th>Platform</th><th>Storage</th><th>Compute</th><th>Transfer</th><th>Total/mo</th></tr></thead>
+              <tbody id="allPlatformBody"></tbody>
+            </table>
+            <div class="chart-wrap" style="height:200px;margin-top:20px">
+              <canvas id="allPlatformChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── MODULE 2: AI ENERGY ANALYZER ── -->
+<section class="section" id="ai">
+  <div class="section-tag">Module 02</div>
+  <h2 class="section-title">AI Energy Analyzer</h2>
+  <p class="section-desc">Understand the environmental cost of AI usage. Analyze token counts, energy consumption, and CO₂ footprint — then get actionable optimization strategies.</p>
+
+  <div class="split">
+    <div>
+      <div class="tool-panel">
+        <div class="panel-header">
+          <div class="panel-dot" style="background:var(--accent4)"></div>
+          <span class="panel-title">Prompt Analyzer</span>
+          <span class="panel-sub">TOKEN ENGINE</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-group" style="margin-bottom:16px">
+            <label>Enter Prompt Text</label>
+            <textarea id="promptText" placeholder="Paste or type your AI prompt here to analyze its energy footprint..." oninput="analyzeEnergy()"></textarea>
+          </div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label>AI Model Class</label>
+            <select id="modelClass" onchange="analyzeEnergy()">
+              <option value="0.001">Small Model (GPT-3.5 / Haiku) — 0.001 Wh/1k tokens</option>
+              <option value="0.003" selected>Medium Model (GPT-4 / Sonnet) — 0.003 Wh/1k tokens</option>
+              <option value="0.01">Large Model (GPT-4o / Opus) — 0.01 Wh/1k tokens</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Daily API Calls</label>
+            <div class="range-wrap">
+              <input type="range" id="dailyCalls" min="1" max="10000" value="100" oninput="updateRange('dailyCalls','dailyCallsVal',this.value+' calls');analyzeEnergy()">
+              <span class="range-val" id="dailyCallsVal">100 calls</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="tool-panel">
+        <div class="panel-header">
+          <div class="panel-dot" style="background:var(--accent3)"></div>
+          <span class="panel-title">Energy Metrics</span>
+          <span class="panel-sub">LIVE ANALYSIS</span>
+        </div>
+        <div class="panel-body">
+          <div class="energy-meter">
+            <div class="energy-label">Energy Load</div>
+            <div class="energy-bar-bg">
+              <div class="energy-bar-fill" id="energyBarFill"></div>
+            </div>
+            <div class="energy-stats">
+              <div class="e-stat">
+                <div class="e-stat-val" id="tokenCount" style="color:var(--accent4)">0</div>
+                <div class="e-stat-label">Tokens</div>
+              </div>
+              <div class="e-stat">
+                <div class="e-stat-val" id="energyWh" style="color:var(--accent5)">0 Wh</div>
+                <div class="e-stat-label">Per Request</div>
+              </div>
+              <div class="e-stat">
+                <div class="e-stat-val" id="co2Daily" style="color:var(--accent3)">0g</div>
+                <div class="e-stat-label">CO₂ / Day</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="result-box" style="margin-top:0">
+            <div class="result-row"><span class="result-key">Token Count (est.)</span><span class="result-val" id="r_tokens">—</span></div>
+            <div class="result-row"><span class="result-key">Energy/Request</span><span class="result-val" id="r_energy">—</span></div>
+            <div class="result-row"><span class="result-key">Monthly Energy</span><span class="result-val" id="r_monthly">—</span></div>
+            <div class="result-row"><span class="result-key">CO₂ Equivalent/mo</span><span class="result-val" id="r_co2">—</span></div>
+            <div class="result-row"><span class="result-key">Efficiency Level</span><span class="result-val" id="r_level">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:28px">
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dot" style="background:var(--accent2)"></div>
+        <span class="panel-title">Optimization Strategies</span>
+        <span class="panel-sub">RECOMMENDATIONS</span>
+      </div>
+      <div class="panel-body">
+        <div id="suggestions" class="suggestions">
+          <p style="color:var(--text-dim);font-size:13px;font-family:var(--mono)">// Type something above to generate optimization suggestions...</p>
+        </div>
+        <div style="margin-top:24px">
+          <div class="chart-wrap" style="height:180px">
+            <canvas id="energyChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── MODULE 3: CLOUD COMPARISON ── -->
+<section class="section" id="compare">
+  <div class="section-tag">Module 03</div>
+  <h2 class="section-title">Cloud Platform Comparison</h2>
+  <p class="section-desc">Comprehensive benchmarks of AWS, Azure, and GCP across pricing, scalability, performance, and ecosystem — evaluated against a real e-commerce workload.</p>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">Overview Table</button>
+    <button class="tab-btn" onclick="switchTab('pricing',this)">Pricing</button>
+    <button class="tab-btn" onclick="switchTab('performance',this)">Performance</button>
+    <button class="tab-btn" onclick="switchTab('usecase',this)">E-Commerce Case</button>
+  </div>
+
+  <div class="tab-pane active" id="tab-overview">
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dot" style="background:var(--accent2)"></div>
+        <span class="panel-title">Platform Overview</span>
+        <span class="panel-sub">ALL METRICS</span>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Criteria</th>
+              <th>🟠 AWS</th>
+              <th>🔵 Azure</th>
+              <th>🟢 GCP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Global Regions</td>
+              <td><span style="color:var(--accent5);font-family:var(--mono);font-size:13px">32</span></td>
+              <td><span style="color:var(--accent);font-family:var(--mono);font-size:13px">60+</span></td>
+              <td><span style="color:var(--accent2);font-family:var(--mono);font-size:13px">37</span></td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Market Share</td>
+              <td><span style="color:var(--accent5)">32%</span> <span class="badge badge-best">Leader</span></td>
+              <td><span style="color:var(--accent)">22%</span> <span class="badge badge-good">#2</span></td>
+              <td><span style="color:var(--accent2)">11%</span> <span class="badge badge-avg">#3</span></td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Storage $/GB/mo</td>
+              <td style="font-family:var(--mono);font-size:13px">$0.023</td>
+              <td style="font-family:var(--mono);font-size:13px">$0.018</td>
+              <td style="font-family:var(--mono);font-size:13px">$0.020</td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Compute $/hr (gen)</td>
+              <td style="font-family:var(--mono);font-size:13px">$0.0416</td>
+              <td style="font-family:var(--mono);font-size:13px">$0.0380</td>
+              <td style="font-family:var(--mono);font-size:13px">$0.0350</td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Scalability</td>
+              <td>
+                <div class="rating-bar" style="--bar-color:var(--accent5)">
+                  <div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot filled"></div>
+                </div>
+              </td>
+              <td>
+                <div class="rating-bar" style="--bar-color:var(--accent)">
+                  <div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot empty"></div>
+                </div>
+              </td>
+              <td>
+                <div class="rating-bar" style="--bar-color:var(--accent2)">
+                  <div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot filled"></div><div class="rating-dot filled"></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">ML/AI Services</td>
+              <td><span class="badge badge-good">SageMaker</span></td>
+              <td><span class="badge badge-best">Azure OpenAI</span></td>
+              <td><span class="badge badge-best">Vertex AI</span></td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Free Tier</td>
+              <td>12 months</td>
+              <td>12 months</td>
+              <td>Always free</td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Best For</td>
+              <td>Startups, general</td>
+              <td>Enterprise, .NET</td>
+              <td>Data & Analytics</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Storage Cost Comparison ($/GB/mo)</div>
+        <div class="chart-wrap"><canvas id="storageCompChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Compute Cost Comparison ($/hr)</div>
+        <div class="chart-wrap"><canvas id="computeCompChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-pricing">
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Monthly Cost — 1TB Storage + 500hrs Compute + 500GB Transfer</div>
+        <div class="chart-wrap"><canvas id="totalCompChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Data Transfer Egress Cost ($/GB)</div>
+        <div class="chart-wrap"><canvas id="transferChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-performance">
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Performance Radar Score (out of 100)</div>
+        <div class="chart-wrap" style="height:280px"><canvas id="radarChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Network Latency Benchmark (ms avg)</div>
+        <div class="chart-wrap"><canvas id="latencyChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-usecase">
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dot" style="background:var(--accent3)"></div>
+        <span class="panel-title">E-Commerce App Analysis</span>
+        <span class="panel-sub">REAL WORKLOAD</span>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:24px">
+          <div style="padding:18px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Scenario</div>
+            <div style="font-size:13px;color:var(--text-muted);line-height:1.7">Mid-scale e-commerce platform. 50K daily active users, 5TB product images, 2TB database, peak traffic 10x baseline.</div>
+          </div>
+          <div style="padding:18px;background:rgba(255,166,87,0.06);border:1px solid rgba(255,166,87,0.2);border-radius:10px">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--accent5);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">🟠 AWS Verdict</div>
+            <div style="font-size:13px;line-height:1.7">Best ecosystem & marketplace. CloudFront CDN excellent for product images. Estimated <strong>~$1,840/mo</strong>.</div>
+          </div>
+          <div style="padding:18px;background:rgba(88,166,255,0.06);border:1px solid rgba(88,166,255,0.2);border-radius:10px">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">🔵 Azure Verdict</div>
+            <div style="font-size:13px;line-height:1.7">Best for hybrid cloud & enterprise auth. Azure Cosmos DB for real-time cart. Estimated <strong>~$1,720/mo</strong>.</div>
+          </div>
+          <div style="padding:18px;background:rgba(63,185,80,0.06);border:1px solid rgba(63,185,80,0.2);border-radius:10px">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--accent2);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">🟢 GCP Verdict</div>
+            <div style="font-size:13px;line-height:1.7">Best cost-efficiency & BigQuery analytics. Sustained use discounts. Estimated <strong>~$1,560/mo</strong>. Best value.</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="ecommerceChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ── NETWORK SECURITY ── -->
+<section class="section" id="network">
+  <div class="section-tag">Module 04</div>
+  <h2 class="section-title">Network Security & Analysis</h2>
+  <p class="section-desc">Conceptual demonstrations of real-world attack vectors, LAN simulation architecture, network traffic analysis, and VoIP protocol flow.</p>
+
+  <!-- LAN Topology -->
+  <div style="margin-bottom:48px">
+    <h3 style="font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px">LAN Simulation Architecture</h3>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px">A simulated local area network with server, clients, attacker node, and switch for ARP spoofing demonstration.</p>
+    <div class="tool-panel">
+      <div class="panel-header">
+        <div class="panel-dot" style="background:var(--accent3);animation:pulse 1.8s ease-in-out infinite"></div>
+        <span class="panel-title">Network Topology — ARP Spoofing Demo</span>
+        <span class="panel-sub">SIMULATED</span>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;text-align:center;margin-bottom:24px">
+          <div style="padding:16px;background:var(--surface2);border:1px solid rgba(63,185,80,0.3);border-radius:10px">
+            <div style="font-size:24px;margin-bottom:6px">🖥️</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--accent2)">SERVER</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:3px">192.168.1.1</div>
+          </div>
+          <div style="padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+            <div style="font-size:24px;margin-bottom:6px">💻</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">CLIENT A</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:3px">192.168.1.10</div>
+          </div>
+          <div style="padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+            <div style="font-size:24px;margin-bottom:6px">📱</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">CLIENT B</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:3px">192.168.1.11</div>
+          </div>
+          <div style="padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px">
+            <div style="font-size:24px;margin-bottom:6px">🔀</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">SWITCH</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:3px">Layer 2 / 24-port</div>
+          </div>
+          <div style="padding:16px;background:rgba(247,129,102,0.07);border:1px solid rgba(247,129,102,0.3);border-radius:10px">
+            <div style="font-size:24px;margin-bottom:6px">💀</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--accent3)">ATTACKER</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:3px">192.168.1.99</div>
+          </div>
+        </div>
+
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+            <span class="terminal-title">kali@attacker — arpspoof simulation</span>
+          </div>
+          <div class="terminal-body">
+            <div><span class="t-dim"># Step 1: Enable IP forwarding</span></div>
+            <div><span class="t-cmd">$ </span><span class="t-white">echo 1 > /proc/sys/net/ipv4/ip_forward</span></div>
+            <div><span class="t-green">✓ IP forwarding enabled</span></div>
+            <div style="margin-top:8px"><span class="t-dim"># Step 2: ARP spoof — tell Client A we are the gateway</span></div>
+            <div><span class="t-cmd">$ </span><span class="t-white">arpspoof -i eth0 -t 192.168.1.10 192.168.1.1</span></div>
+            <div><span class="t-yellow">→ Sending spoofed ARP replies to 192.168.1.10...</span></div>
+            <div style="margin-top:8px"><span class="t-dim"># Step 3: ARP spoof — tell Server Client A's IP is us</span></div>
+            <div><span class="t-cmd">$ </span><span class="t-white">arpspoof -i eth0 -t 192.168.1.1 192.168.1.10</span></div>
+            <div><span class="t-yellow">→ Sending spoofed ARP replies to 192.168.1.1...</span></div>
+            <div style="margin-top:8px"><span class="t-dim"># Step 4: Capture intercepted traffic</span></div>
+            <div><span class="t-cmd">$ </span><span class="t-white">wireshark -i eth0 -f "host 192.168.1.10"</span></div>
+            <div><span class="t-red">⚠ MITM ACTIVE — All Client A ↔ Server traffic intercepted</span></div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="padding:16px;background:rgba(63,185,80,0.06);border:1px solid rgba(63,185,80,0.2);border-radius:8px">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--accent2);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Before Attack</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.7">Client A ARP table:<br><span style="font-family:var(--mono)">192.168.1.1 → AA:BB:CC:DD:EE:01 (real)</span></div>
+          </div>
+          <div style="padding:16px;background:rgba(247,129,102,0.06);border:1px solid rgba(247,129,102,0.2);border-radius:8px">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--accent3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">After Attack</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.7">Client A ARP table:<br><span style="font-family:var(--mono)">192.168.1.1 → FF:EE:DD:CC:BB:99 (attacker!)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Threat Demos -->
+  <h3 style="font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px">Threat Demonstrations</h3>
+  <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px">Common attack vectors with defense strategies for each threat category.</p>
+  <div class="network-grid" style="margin-bottom:48px">
+    <div class="threat-card">
+      <div class="threat-icon">🦠</div>
+      <div class="threat-name">Malware</div>
+      <div><span class="threat-tag tag-attack">Trojan</span><span class="threat-tag tag-attack">Ransomware</span><span class="threat-tag tag-attack">Worm</span></div>
+      <div class="threat-desc">Malicious software that enters via phishing emails, infected USB drives, or exploit kits. Can encrypt files, steal credentials, or create backdoors.</div>
+      <div class="defend-list">
+        <div class="defend-item">Endpoint detection & response (EDR/AV)</div>
+        <div class="defend-item">Regular system patching & updates</div>
+        <div class="defend-item">Application whitelisting</div>
+        <div class="defend-item">Offline backups with 3-2-1 rule</div>
+      </div>
+    </div>
+    <div class="threat-card">
+      <div class="threat-icon">🎣</div>
+      <div class="threat-name">Phishing</div>
+      <div><span class="threat-tag tag-attack">Email</span><span class="threat-tag tag-attack">Fake Login</span><span class="threat-tag tag-attack">Social Eng.</span></div>
+      <div class="threat-desc">Fake login pages mimic legitimate sites (Google, bank portals). Users unknowingly submit credentials. The attacker harvests and reuses them.</div>
+      <div class="defend-list">
+        <div class="defend-item">Multi-factor authentication (MFA/TOTP)</div>
+        <div class="defend-item">Browser anti-phishing filters</div>
+        <div class="defend-item">Domain look-alike detection</div>
+        <div class="defend-item">Security awareness training</div>
+      </div>
+    </div>
+    <div class="threat-card">
+      <div class="threat-icon">💥</div>
+      <div class="threat-name">DDoS Attack</div>
+      <div><span class="threat-tag tag-attack">Volumetric</span><span class="threat-tag tag-attack">SYN Flood</span><span class="threat-tag tag-attack">Layer 7</span></div>
+      <div class="threat-desc">Distributed denial-of-service floods a server with traffic from thousands of compromised hosts (botnet), overwhelming bandwidth and crashing services.</div>
+      <div class="defend-list">
+        <div class="defend-item">CDN + DDoS scrubbing (Cloudflare)</div>
+        <div class="defend-item">Rate limiting & IP reputation blocks</div>
+        <div class="defend-item">Anycast routing diffusion</div>
+        <div class="defend-item">Auto-scaling cloud infrastructure</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Network Traffic Analysis -->
+  <h3 style="font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px">Network Usage Analysis</h3>
+  <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px">Wireshark packet capture analysis of real application traffic — YouTube, WhatsApp, and HTTPS browsing.</p>
+  <div class="tool-panel" style="margin-bottom:48px">
+    <div class="panel-header">
+      <div class="panel-dot" style="background:var(--accent)"></div>
+      <span class="panel-title">Wireshark Capture Summary</span>
+      <span class="panel-sub">PACKET ANALYSIS</span>
+    </div>
+    <div class="panel-body">
+      <div class="packet-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Application</th><th>Protocol</th><th>Packets/min</th><th>Avg Size</th><th>Servers</th><th>Data Use</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="font-family:var(--mono);color:var(--text-dim)">01</td>
+              <td>📺 YouTube</td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">QUIC / HTTPS</span></td>
+              <td style="font-family:var(--mono)">1,200–4,000</td>
+              <td style="font-family:var(--mono)">1,200 bytes</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">googlevideo.com CDN</td>
+              <td style="font-family:var(--mono);color:var(--accent5)">~4.5 MB/s (1080p)</td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);color:var(--text-dim)">02</td>
+              <td>💬 WhatsApp</td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--accent4)">TLS 1.3 / XMPP</span></td>
+              <td style="font-family:var(--mono)">20–60</td>
+              <td style="font-family:var(--mono)">180 bytes</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">whatsapp.net (Meta)</td>
+              <td style="font-family:var(--mono);color:var(--accent2)">~2 KB/msg</td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);color:var(--text-dim)">03</td>
+              <td>🌐 HTTPS Browse</td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--accent2)">TLS 1.3 / TCP</span></td>
+              <td style="font-family:var(--mono)">100–500</td>
+              <td style="font-family:var(--mono)">600 bytes</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Varies / CDN edges</td>
+              <td style="font-family:var(--mono);color:var(--accent)">~200–800 KB/page</td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);color:var(--text-dim)">04</td>
+              <td>📞 VoIP Call</td>
+              <td><span style="font-family:var(--mono);font-size:11px;color:var(--accent3)">SIP / RTP / UDP</span></td>
+              <td style="font-family:var(--mono)">50 (50fps)</td>
+              <td style="font-family:var(--mono)">214 bytes</td>
+              <td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">Asterisk / SIP Proxy</td>
+              <td style="font-family:var(--mono);color:var(--accent3)">~87 Kbps (G.711)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-grid" style="margin-top:20px">
+        <div class="chart-card">
+          <div class="chart-card-title">Data Usage per Application (MB/hr)</div>
+          <div class="chart-wrap"><canvas id="trafficChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Protocol Distribution (%)</div>
+          <div class="chart-wrap"><canvas id="protocolChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VoIP Section -->
+  <h3 style="font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px">VoIP Architecture & SIP/RTP Flow</h3>
+  <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px">How internet-based calling works — from SIP signaling to RTP media stream and codec negotiation.</p>
+  <div class="tool-panel">
+    <div class="panel-header">
+      <div class="panel-dot" style="background:var(--accent4)"></div>
+      <span class="panel-title">SIP Call Flow — Asterisk PBX</span>
+      <span class="panel-sub">PROTOCOL DEMO</span>
+    </div>
+    <div class="panel-body">
+      <div class="voip-flow">
+        <div class="voip-node">
+          <div class="voip-node-icon">📱</div>
+          <div class="voip-node-label">SIP Client A</div>
+          <div class="voip-node-proto">softphone</div>
+        </div>
+        <div class="voip-arrow">
+          <div class="voip-arrow-line">→→→</div>
+          <div class="voip-arrow-label">SIP INVITE</div>
+        </div>
+        <div class="voip-node">
+          <div class="voip-node-icon">⭐</div>
+          <div class="voip-node-label">Asterisk PBX</div>
+          <div class="voip-node-proto">SIP Proxy</div>
+        </div>
+        <div class="voip-arrow">
+          <div class="voip-arrow-line">→→→</div>
+          <div class="voip-arrow-label">SIP INVITE</div>
+        </div>
+        <div class="voip-node">
+          <div class="voip-node-icon">💻</div>
+          <div class="voip-node-label">SIP Client B</div>
+          <div class="voip-node-proto">softphone</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);margin:12px 0 20px">
+        ↕ RTP media stream flows directly between clients (peer-to-peer) after signaling
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--accent4);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">SIP Protocol</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7">Session Initiation Protocol handles call setup, teardown, ringing, and codec negotiation. Port 5060 (UDP/TCP).</div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--accent3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">RTP Protocol</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7">Real-time Transport Protocol carries the actual audio stream. Uses dynamic UDP ports (16384–32767). 50 packets/sec (G.711).</div>
+        </div>
+        <div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--accent2);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Codecs</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7">G.711 (64 Kbps uncompressed), G.729 (8 Kbps compressed), Opus (6–510 Kbps adaptive). Negotiated via SDP in INVITE.</div>
+        </div>
+      </div>
+      <div class="terminal" style="margin-top:20px">
+        <div class="terminal-bar">
+          <div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+          <span class="terminal-title">wireshark — SIP packet capture</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-dim">No.  Time     Source          Destination     Protocol  Info</span></div>
+          <div><span class="t-white"> 1   0.000    192.168.1.10    192.168.1.1     SIP       </span><span class="t-green">INVITE sip:bob@asterisk.local SIP/2.0</span></div>
+          <div><span class="t-white"> 2   0.012    192.168.1.1     192.168.1.10    SIP       </span><span class="t-yellow">100 Trying</span></div>
+          <div><span class="t-white"> 3   0.045    192.168.1.1     192.168.1.10    SIP       </span><span class="t-yellow">180 Ringing</span></div>
+          <div><span class="t-white"> 4   2.310    192.168.1.1     192.168.1.10    SIP       </span><span class="t-green">200 OK</span></div>
+          <div><span class="t-white"> 5   2.315    192.168.1.10    192.168.1.1     SIP       </span><span class="t-white">ACK</span></div>
+          <div><span class="t-white"> 6+  2.320    192.168.1.10    192.168.1.20    RTP       </span><span class="t-yellow">Audio stream — G.711 — 50 pkt/s — 214 bytes each</span></div>
+          <div><span class="t-dim">...  (call in progress)</span></div>
+          <div><span class="t-white"> 901 18.500   192.168.1.10    192.168.1.1     SIP       </span><span class="t-red">BYE sip:bob@asterisk.local SIP/2.0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<footer>
+  <div class="footer-logo">Nexa<span>Sys</span></div>
+  <p class="footer-note">CLOUD · AI · NETWORK INTELLIGENCE PLATFORM</p>
+  <div class="footer-chips">
+    <span class="footer-chip">AWS</span>
+    <span class="footer-chip">Azure</span>
+    <span class="footer-chip">GCP</span>
+    <span class="footer-chip">Kali Linux</span>
+    <span class="footer-chip">Wireshark</span>
+    <span class="footer-chip">Asterisk PBX</span>
+  </div>
+  <p style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:12px;letter-spacing:0.06em">© 2025 — Cloud & Network Systems Analysis Project</p>
+</footer>
+
+<script>
+/* ─ LOADER ─ */
+let pct = 0;
+const pctEl = document.getElementById('loaderPct');
+const interval = setInterval(() => {
+  pct += Math.random() * 12 + 4;
+  if (pct >= 100) { pct = 100; clearInterval(interval); }
+  pctEl.textContent = Math.floor(pct) + '%';
+  if (pct >= 100) {
+    setTimeout(() => {
+      document.getElementById('loader').classList.add('hidden');
+      initCharts();
+    }, 300);
+  }
+}, 80);
+
+/* ─ INTERSECTION OBSERVER ─ */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+/* ─ RANGE HELPERS ─ */
+function updateRange(id, valId, display) {
+  document.getElementById(valId).textContent = display;
+}
+
+/* ─ CLOUD COST ─ */
+const RATES = {
+  aws:   { storage: 0.023, compute: 0.0416, transfer: 0.09 },
+  azure: { storage: 0.018, compute: 0.0380, transfer: 0.087 },
+  gcp:   { storage: 0.020, compute: 0.0350, transfer: 0.08 },
+};
+
+let currentPlatform = 'aws';
+let costChart = null;
+
+function setPlatform(p, btn) {
+  currentPlatform = p;
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('costResult').style.display = p === 'all' ? 'none' : '';
+  document.getElementById('allPlatformResult').style.display = p === 'all' ? '' : 'none';
+  if (p !== 'all') {
+    document.getElementById('platformLabel').textContent = p.toUpperCase();
+  }
+  calcCost();
+}
+
+function calcCost() {
+  const storage = +document.getElementById('storage').value;
+  const compute = +document.getElementById('compute').value;
+  const transfer = +document.getElementById('transfer').value;
+  const mult = +document.getElementById('instanceType').value;
+  const region = +document.getElementById('region').value;
+
+  if (currentPlatform === 'all') {
+    showAllPlatforms(storage, compute, transfer, mult, region);
+    return;
+  }
+
+  const r = RATES[currentPlatform];
+  const sc = storage * r.storage;
+  const cc = compute * r.compute * mult;
+  const tc = transfer * r.transfer;
+  const total = (sc + cc + tc) * region;
+
+  document.getElementById('storCost').textContent = '$' + sc.toFixed(2);
+  document.getElementById('compCost').textContent = '$' + cc.toFixed(2);
+  document.getElementById('tranCost').textContent = '$' + tc.toFixed(2);
+  document.getElementById('regionMult').textContent = region.toFixed(2) + 'x';
+  document.getElementById('totalCost').textContent = '$' + total.toFixed(2);
+
+  updateCostChart([sc * region, cc * region, tc * region]);
+}
+
+function updateCostChart(vals) {
+  const ctx = document.getElementById('costChart').getContext('2d');
+  if (costChart) costChart.destroy();
+  costChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Storage', 'Compute', 'Transfer'],
+      datasets: [{ data: vals, backgroundColor: ['rgba(88,166,255,0.7)','rgba(255,166,87,0.7)','rgba(63,185,80,0.7)'], borderColor: 'transparent', hoverOffset: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#7D8590', font: { family: 'DM Mono', size: 11 } } } }
+    }
+  });
+}
+
+let allPlatformChart = null;
+function showAllPlatforms(storage, compute, transfer, mult, region) {
+  const tbody = document.getElementById('allPlatformBody');
+  const rows = [];
+  const totals = [];
+  for (const [name, r] of Object.entries(RATES)) {
+    const sc = storage * r.storage;
+    const cc = compute * r.compute * mult;
+    const tc = transfer * r.transfer;
+    const total = (sc + cc + tc) * region;
+    totals.push(total);
+    rows.push(`<tr>
+      <td style="font-family:var(--mono);font-weight:600">${name.toUpperCase()}</td>
+      <td style="font-family:var(--mono);font-size:12px">$${sc.toFixed(2)}</td>
+      <td style="font-family:var(--mono);font-size:12px">$${cc.toFixed(2)}</td>
+      <td style="font-family:var(--mono);font-size:12px">$${tc.toFixed(2)}</td>
+      <td style="font-family:var(--mono);font-weight:600;color:var(--accent)">$${total.toFixed(2)}</td>
+    </tr>`);
+  }
+  tbody.innerHTML = rows.join('');
+
+  const ctx = document.getElementById('allPlatformChart').getContext('2d');
+  if (allPlatformChart) allPlatformChart.destroy();
+  allPlatformChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['AWS', 'Azure', 'GCP'],
+      datasets: [{ label: 'Monthly Total ($)', data: totals, backgroundColor: ['rgba(255,166,87,0.6)','rgba(88,166,255,0.6)','rgba(63,185,80,0.6)'], borderColor: ['rgba(255,166,87,1)','rgba(88,166,255,1)','rgba(63,185,80,1)'], borderWidth: 1, borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 10 }, callback: v => '$'+v }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 11 } }, grid: { display: false } } }
+    }
+  });
+}
+
+function resetCalc() {
+  document.getElementById('storage').value = 500;
+  document.getElementById('storageVal').textContent = '500 GB';
+  document.getElementById('compute').value = 200;
+  document.getElementById('computeVal').textContent = '200 hrs';
+  document.getElementById('transfer').value = 100;
+  document.getElementById('transferVal').textContent = '100 GB';
+  calcCost();
+}
+
+/* ─ AI ENERGY ANALYZER ─ */
+let energyChart = null;
+const SUGGESTIONS_DATA = [
+  { icon: '✂️', title: 'Shorten Prompts', desc: 'Reduce prompt length by 40–60%. Remove verbose preambles, redundant context, and filler words. Fewer tokens = less energy.' },
+  { icon: '🤏', title: 'Use Smaller Models', desc: 'For simple tasks, GPT-3.5 / Haiku uses ~10x less energy than GPT-4. Reserve large models for complex reasoning only.' },
+  { icon: '💾', title: 'Implement Response Caching', desc: 'Cache frequent, identical queries. A 30% cache hit rate can reduce total API calls (and energy) by nearly one-third.' },
+  { icon: '📦', title: 'Batch API Calls', desc: 'Group multiple independent tasks into one call instead of making separate requests. Reduces overhead and idle compute.' },
+  { icon: '🔁', title: 'Avoid Redundant Calls', desc: 'Add deduplication logic. If the same prompt is called twice within a session, return the cached result instead of re-querying.' },
+];
+
+function analyzeEnergy() {
+  const text = document.getElementById('promptText').value;
+  const modelWh = +document.getElementById('modelClass').value;
+  const calls = +document.getElementById('dailyCalls').value;
+
+  const wordCount = text.trim().split(/\s+/).filter(w => w).length;
+  const tokens = Math.round(wordCount * 1.3);
+  const energyWh = (tokens / 1000) * modelWh;
+  const energyDaily = energyWh * calls;
+  const energyMonthly = energyDaily * 30;
+  const co2Daily = energyDaily * 400; // ~400g CO2/kWh
+  const co2Monthly = co2Daily * 30;
+
+  const pct = Math.min(100, (tokens / 2000) * 100);
+  document.getElementById('energyBarFill').style.width = pct + '%';
+  document.getElementById('energyBarFill').style.background = pct > 70 ? '#F78166' : pct > 40 ? '#FFA657' : '#3FB950';
+
+  document.getElementById('tokenCount').textContent = tokens.toLocaleString();
+  document.getElementById('energyWh').textContent = energyWh.toFixed(4) + ' Wh';
+  document.getElementById('co2Daily').textContent = co2Daily.toFixed(1) + 'g';
+
+  const level = tokens < 200 ? '🟢 Efficient' : tokens < 600 ? '🟡 Moderate' : '🔴 Heavy';
+  document.getElementById('r_tokens').textContent = tokens.toLocaleString() + ' tokens';
+  document.getElementById('r_energy').textContent = energyWh.toFixed(5) + ' Wh / request';
+  document.getElementById('r_monthly').textContent = energyMonthly.toFixed(3) + ' Wh (' + (energyMonthly / 1000).toFixed(5) + ' kWh)';
+  document.getElementById('r_co2').textContent = (co2Monthly / 1000).toFixed(3) + ' kg CO₂';
+  document.getElementById('r_level').textContent = level;
+
+  updateEnergyChart(tokens, calls, modelWh);
+  showSuggestions(tokens);
+}
+
+function updateEnergyChart(tokens, calls, modelWh) {
+  const models = ['Small (Haiku)', 'Medium (Sonnet)', 'Large (Opus)'];
+  const rates = [0.001, 0.003, 0.01];
+  const data = rates.map(r => +(((tokens / 1000) * r) * calls * 30 / 1000).toFixed(5));
+  const ctx = document.getElementById('energyChart').getContext('2d');
+  if (energyChart) energyChart.destroy();
+  energyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: models,
+      datasets: [{ label: 'Monthly kWh', data, backgroundColor: ['rgba(63,185,80,0.6)','rgba(88,166,255,0.6)','rgba(247,129,102,0.6)'], borderColor: ['rgba(63,185,80,1)','rgba(88,166,255,1)','rgba(247,129,102,1)'], borderWidth: 1, borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 10 }, callback: v => v + ' kWh' }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } }, grid: { display: false } } }
+    }
+  });
+}
+
+function showSuggestions(tokens) {
+  const container = document.getElementById('suggestions');
+  container.innerHTML = '';
+  const relevant = tokens < 100 ? SUGGESTIONS_DATA.slice(2) : SUGGESTIONS_DATA;
+  relevant.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'suggestion-item';
+    el.innerHTML = `<span class="sug-icon">${s.icon}</span><div><div class="sug-title">${s.title}</div><div class="sug-desc">${s.desc}</div></div>`;
+    container.appendChild(el);
+    setTimeout(() => el.classList.add('show'), i * 80);
+  });
+}
+
+/* ─ COMPARISON CHARTS ─ */
+let chartsInit = false;
+function initCharts() {
+  if (chartsInit) return;
+  chartsInit = true;
+  calcCost();
+
+  const chartDefaults = {
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      x: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 11 } }, grid: { display: false } }
+    },
+    responsive: true, maintainAspectRatio: false
+  };
+
+  new Chart(document.getElementById('storageCompChart'), {
+    type: 'bar',
+    data: { labels: ['AWS S3','Azure Blob','GCP GCS'], datasets: [{ data: [0.023, 0.018, 0.020], backgroundColor: ['rgba(255,166,87,0.6)','rgba(88,166,255,0.6)','rgba(63,185,80,0.6)'], borderColor: ['rgba(255,166,87,1)','rgba(88,166,255,1)','rgba(63,185,80,1)'], borderWidth: 1, borderRadius: 4 }] },
+    options: { ...chartDefaults, plugins: { legend: { display: false } }, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => '$'+v } } } }
+  });
+
+  new Chart(document.getElementById('computeCompChart'), {
+    type: 'bar',
+    data: { labels: ['AWS EC2','Azure VM','GCP CE'], datasets: [{ data: [0.0416, 0.0380, 0.0350], backgroundColor: ['rgba(255,166,87,0.6)','rgba(88,166,255,0.6)','rgba(63,185,80,0.6)'], borderColor: ['rgba(255,166,87,1)','rgba(88,166,255,1)','rgba(63,185,80,1)'], borderWidth: 1, borderRadius: 4 }] },
+    options: { ...chartDefaults, plugins: { legend: { display: false } }, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => '$'+v } } } }
+  });
+
+  new Chart(document.getElementById('totalCompChart'), {
+    type: 'bar',
+    data: { labels: ['AWS', 'Azure', 'GCP'], datasets: [{ label: 'Total/mo ($)', data: [1840, 1720, 1560], backgroundColor: ['rgba(255,166,87,0.6)','rgba(88,166,255,0.6)','rgba(63,185,80,0.6)'], borderColor: ['rgba(255,166,87,1)','rgba(88,166,255,1)','rgba(63,185,80,1)'], borderWidth: 1, borderRadius: 4 }] },
+    options: { ...chartDefaults, plugins: { legend: { display: false } }, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: v => '$'+v } } } }
+  });
+
+  new Chart(document.getElementById('transferChart'), {
+    type: 'line',
+    data: {
+      labels: ['0GB','100GB','500GB','1TB','5TB','10TB'],
+      datasets: [
+        { label: 'AWS', data: [0, 0.09, 0.085, 0.08, 0.07, 0.05], borderColor: 'rgba(255,166,87,1)', backgroundColor: 'rgba(255,166,87,0.08)', tension: 0.4, fill: true },
+        { label: 'Azure', data: [0, 0.087, 0.083, 0.078, 0.065, 0.05], borderColor: 'rgba(88,166,255,1)', backgroundColor: 'rgba(88,166,255,0.08)', tension: 0.4, fill: true },
+        { label: 'GCP', data: [0, 0.08, 0.075, 0.06, 0.055, 0.04], borderColor: 'rgba(63,185,80,1)', backgroundColor: 'rgba(63,185,80,0.08)', tension: 0.4, fill: true },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } } } }, scales: { y: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 10 }, callback: v => '$'+v }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 9 } }, grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+      labels: ['Pricing', 'Scalability', 'Performance', 'AI/ML', 'Support', 'Ecosystem'],
+      datasets: [
+        { label: 'AWS', data: [70, 95, 88, 82, 90, 95], borderColor: 'rgba(255,166,87,0.9)', backgroundColor: 'rgba(255,166,87,0.08)', pointBackgroundColor: 'rgba(255,166,87,1)' },
+        { label: 'Azure', data: [78, 85, 85, 92, 88, 88], borderColor: 'rgba(88,166,255,0.9)', backgroundColor: 'rgba(88,166,255,0.08)', pointBackgroundColor: 'rgba(88,166,255,1)' },
+        { label: 'GCP', data: [88, 82, 90, 93, 75, 78], borderColor: 'rgba(63,185,80,0.9)', backgroundColor: 'rgba(63,185,80,0.08)', pointBackgroundColor: 'rgba(63,185,80,1)' }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } } } }, scales: { r: { angleLines: { color: 'rgba(255,255,255,0.07)' }, grid: { color: 'rgba(255,255,255,0.07)' }, pointLabels: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } }, ticks: { color: '#4A5568', backdropColor: 'transparent', font: { size: 9 } } } } }
+  });
+
+  new Chart(document.getElementById('latencyChart'), {
+    type: 'bar',
+    data: {
+      labels: ['US East', 'EU West', 'Asia Pacific', 'South America'],
+      datasets: [
+        { label: 'AWS', data: [18, 22, 38, 52], backgroundColor: 'rgba(255,166,87,0.6)', borderColor: 'rgba(255,166,87,1)', borderWidth: 1, borderRadius: 3 },
+        { label: 'Azure', data: [20, 19, 42, 58], backgroundColor: 'rgba(88,166,255,0.6)', borderColor: 'rgba(88,166,255,1)', borderWidth: 1, borderRadius: 3 },
+        { label: 'GCP', data: [16, 21, 35, 55], backgroundColor: 'rgba(63,185,80,0.6)', borderColor: 'rgba(63,185,80,1)', borderWidth: 1, borderRadius: 3 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } } } }, scales: { y: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 10 }, callback: v => v+'ms' }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } }, grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('ecommerceChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Compute', 'Storage', 'CDN/Transfer', 'Database', 'Load Balancer'],
+      datasets: [
+        { label: 'AWS', data: [780, 115, 450, 340, 155], backgroundColor: 'rgba(255,166,87,0.6)', borderColor: 'rgba(255,166,87,1)', borderWidth: 1, borderRadius: 3 },
+        { label: 'Azure', data: [720, 90, 430, 320, 160], backgroundColor: 'rgba(88,166,255,0.6)', borderColor: 'rgba(88,166,255,1)', borderWidth: 1, borderRadius: 3 },
+        { label: 'GCP', data: [650, 100, 390, 280, 140], backgroundColor: 'rgba(63,185,80,0.6)', borderColor: 'rgba(63,185,80,1)', borderWidth: 1, borderRadius: 3 }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } } } }, scales: { y: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 10 }, callback: v => '$'+v }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 9 } }, grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('trafficChart'), {
+    type: 'bar',
+    data: {
+      labels: ['YouTube\n(480p)', 'YouTube\n(1080p)', 'WhatsApp\nMsg', 'WhatsApp\nVoice', 'HTTPS\nBrowse', 'VoIP\nCall'],
+      datasets: [{ data: [600, 16200, 0.12, 84, 60, 42], backgroundColor: ['rgba(247,129,102,0.7)','rgba(247,129,102,0.9)','rgba(88,166,255,0.6)','rgba(88,166,255,0.8)','rgba(63,185,80,0.6)','rgba(210,168,255,0.7)'], borderRadius: 4, borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { type: 'logarithmic', ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 9 }, callback: v => v+'MB' }, grid: { color: 'rgba(255,255,255,0.04)' } }, x: { ticks: { color: '#7D8590', font: { family: 'DM Mono', size: 9 } }, grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('protocolChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['QUIC', 'TLS 1.3 / TCP', 'RTP / UDP', 'SIP / UDP', 'Other'],
+      datasets: [{ data: [38, 31, 18, 8, 5], backgroundColor: ['rgba(247,129,102,0.7)','rgba(88,166,255,0.7)','rgba(63,185,80,0.7)','rgba(210,168,255,0.7)','rgba(125,133,144,0.5)'], borderColor: 'transparent', hoverOffset: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#7D8590', font: { family: 'DM Mono', size: 10 } } } } }
+  });
+}
+
+/* ─ TAB SWITCHER ─ */
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+/* ─ HAPTIC ─ */
+function haptic() {
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+document.querySelectorAll('.btn, .ptab, .tab-btn, .module-card').forEach(el => {
+  el.addEventListener('click', haptic);
+});
+</script>
+</body>
+</html>
